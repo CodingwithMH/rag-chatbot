@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+@theme {
+  /* Setup theme colors */
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+  --font-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  --font-mono: var(--font-geist-mono);
+
+  /* 1. Register your custom animations */
+  --animate-gradient-bg: gradient-bg 15s ease infinite;
+  --animate-pan-bg: pan-bg 45s linear infinite;
+
+  /* 2. Declare the native keyframes directly inside the theme */
+  @keyframes gradient-bg {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  @keyframes pan-bg {
+    0% { background-position: 0px 0px; }
+    100% { background-position: 1000px 1000px; }
+  }
+}
+
+/* Optional Dark Mode overrides */
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-background: #0a0a0a;
+    --color-foreground: #ededed;
+  }
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
