@@ -1,21 +1,11 @@
 import os
 import shutil
 
-from fastapi import FastAPI
-from fastapi import UploadFile
-from fastapi import File
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
-from document_loader import (
-    load_pdf,
-    load_docx,
-    split_text
-)
-
-from rag import (
-    store_chunks,
-    ask_question
-)
+from document_loader import load_pdf, load_docx, split_text
+from rag import store_chunks, ask_question
 
 app = FastAPI()
 
@@ -31,62 +21,40 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-UPLOAD_DIR = "uploads"
-
-os.makedirs(
-    UPLOAD_DIR,
-    exist_ok=True
-)
-
+# Vercel's only writable directory
+UPLOAD_DIR = "/tmp" 
 
 @app.post("/upload")
-
-async def upload_file(
-        file: UploadFile = File(...)
-):
-
-    filepath = os.path.join(
-        UPLOAD_DIR,
-        file.filename
-    )
+async def upload_file(file: UploadFile = File(...)):
+    # Save directly to /tmp
+    filepath = os.path.join(UPLOAD_DIR, file.filename)
 
     with open(filepath, "wb") as buffer:
-        shutil.copyfileobj(
-            file.file,
-            buffer
-        )
+        shutil.copyfileobj(file.file, buffer)
 
     if file.filename.endswith(".pdf"):
         text = load_pdf(filepath)
-
     elif file.filename.endswith(".docx"):
         text = load_docx(filepath)
-
     else:
-        return {
-            "message": "Unsupported file"
-        }
+        return {"message": "Unsupported file"}
+
+    # Clean up the file after reading it to free up serverless memory
+    if os.path.exists(filepath):
+        os.remove(filepath)
 
     chunks = split_text(text)
-
     await store_chunks(chunks)
 
-    return {
-        "message": "Document indexed"
-    }
+    return {"message": "Document indexed"}
 
 
 @app.post("/chat")
-
 async def chat(data: dict):
-
     question = data["question"]
-
     answer = await ask_question(question)
+    return {"answer": answer}
 
-    return {
-        "answer": answer
-    }
 @app.get("/")
 async def check():
     return "Hello World"
